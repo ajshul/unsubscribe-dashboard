@@ -5,9 +5,13 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "moduleResolution": "bundler",
     "types": ["vite/client"],
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"]
