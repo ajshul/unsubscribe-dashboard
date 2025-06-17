@@ -77,7 +77,8 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
           page: pageNum + 1,
           limit: rowsPerPage,
           sender: sender || undefined,
-          pageToken: pageNum > 0 ? nextPageToken || undefined : undefined
+          pageToken: pageNum > 0 ? nextPageToken || undefined : undefined,
+          includeArchived: showUnsubscribed
         });
 
         let sortedEmails = response.data.emails;
@@ -104,7 +105,7 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
         setLoading(false);
       }
     },
-    [rowsPerPage, nextPageToken, sortBy]
+    [rowsPerPage, nextPageToken, sortBy, showUnsubscribed]
   );
 
   // Filtered emails based on showUnsubscribed toggle
@@ -117,7 +118,7 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
 
   useEffect(() => {
     fetchEmails(page, searchSender);
-  }, [page, searchSender, sortBy, refreshTrigger]);
+  }, [page, searchSender, sortBy, refreshTrigger, showUnsubscribed]);
 
   const handlePageChange = (event: unknown, newPage: number) => {
     setPage(newPage);

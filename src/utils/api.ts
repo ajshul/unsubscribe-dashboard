@@ -54,6 +54,7 @@ export const gmailAPI = {
     limit?: number;
     sender?: string;
     pageToken?: string;
+    includeArchived?: boolean;
   }) => api.get('/gmail/unsubscribe-emails', { params }),
   getStats: () => api.get('/gmail/stats'),
   markUnsubscribed: (emailId: string, unsubscribeUrl: string, shouldArchive: boolean = false) =>

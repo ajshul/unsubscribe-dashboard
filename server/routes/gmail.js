@@ -100,12 +100,15 @@ const getGmailClient = userId => {
 // Fetch unsubscribe emails
 router.get('/unsubscribe-emails', authenticateToken, rateLimiter, async (req, res) => {
   try {
-    const { page = 1, limit = 50, sender } = req.query;
+    const { page = 1, limit = 50, sender, includeArchived = 'false' } = req.query;
     const gmail = getGmailClient(req.user.userId);
 
     // Search for emails with unsubscribe links - more comprehensive query
+    // Include archived emails if requested (for "Show Unsubscribed" feature)
+    let locationQuery = includeArchived === 'true' ? '' : 'in:inbox ';
     let query =
-      'in:inbox (has:unsubscribe OR "unsubscribe" OR "opt out" OR "opt-out" OR "remove me" OR "manage subscription" OR "email preferences" OR "notification settings" OR "list-unsubscribe")';
+      locationQuery +
+      '(has:unsubscribe OR "unsubscribe" OR "opt out" OR "opt-out" OR "remove me" OR "manage subscription" OR "email preferences" OR "notification settings" OR "list-unsubscribe")';
     if (sender) {
       query += ` from:${sender}`;
     }
