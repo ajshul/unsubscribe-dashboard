@@ -56,8 +56,9 @@ export const gmailAPI = {
     pageToken?: string;
   }) => api.get('/gmail/unsubscribe-emails', { params }),
   getStats: () => api.get('/gmail/stats'),
-  markUnsubscribed: (emailId: string, unsubscribeUrl: string) =>
-    api.post('/gmail/mark-unsubscribed', { emailId, unsubscribeUrl })
+  markUnsubscribed: (emailId: string, unsubscribeUrl: string, shouldArchive: boolean = false) =>
+    api.post('/gmail/mark-unsubscribed', { emailId, unsubscribeUrl, shouldArchive }),
+  getEmailDetails: (emailId: string) => api.get(`/gmail/email/${emailId}`)
 };
 
 export interface User {

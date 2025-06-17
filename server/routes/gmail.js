@@ -235,27 +235,123 @@ router.get('/stats', authenticateToken, rateLimiter, async (req, res) => {
   }
 });
 
-// Mark unsubscribe link as used
+// Mark unsubscribe link as used and optionally archive
 router.post('/mark-unsubscribed', authenticateToken, async (req, res) => {
   try {
-    const { emailId, unsubscribeUrl } = req.body;
+    const { emailId, unsubscribeUrl, shouldArchive = false } = req.body;
 
     if (!emailId || !unsubscribeUrl) {
       return res.status(400).json({ error: 'Email ID and unsubscribe URL required' });
     }
 
+    const gmail = getGmailClient(req.user.userId);
+    let archivedSuccessfully = false;
+
+    // Archive the thread if requested
+    if (shouldArchive) {
+      try {
+        // Get the thread ID first
+        const messageResponse = await gmail.users.messages.get({
+          userId: 'me',
+          id: emailId,
+          format: 'metadata'
+        });
+
+        const threadId = messageResponse.data.threadId;
+
+        // Archive the entire thread
+        await gmail.users.threads.modify({
+          userId: 'me',
+          id: threadId,
+          requestBody: {
+            removeLabelIds: ['INBOX'],
+            addLabelIds: ['UNREAD'] // Keep it unread but archived
+          }
+        });
+
+        archivedSuccessfully = true;
+      } catch (archiveError) {
+        console.error('Failed to archive thread:', archiveError);
+        // Don't fail the entire request if archiving fails
+      }
+    }
+
     // In a production app, you might want to store this in a database
-    // For now, we'll just return success
     res.json({
       success: true,
       message: 'Unsubscribe action recorded',
       emailId,
       unsubscribeUrl,
+      archived: archivedSuccessfully,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error marking unsubscribed:', error);
     res.status(500).json({ error: 'Failed to record unsubscribe action' });
+  }
+});
+
+// Get detailed email content
+router.get('/email/:emailId', authenticateToken, rateLimiter, async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    const gmail = getGmailClient(req.user.userId);
+
+    const messageResponse = await gmail.users.messages.get({
+      userId: 'me',
+      id: emailId,
+      format: 'full'
+    });
+
+    const msg = messageResponse.data;
+    const headers = {};
+
+    // Parse headers
+    msg.payload?.headers?.forEach(header => {
+      headers[header.name.toLowerCase()] = header.value;
+    });
+
+    // Get email body
+    let body = '';
+    const getBodyFromParts = parts => {
+      if (!parts) return '';
+
+      for (const part of parts) {
+        if (part.mimeType === 'text/html' && part.body?.data) {
+          return Buffer.from(part.body.data, 'base64').toString('utf-8');
+        } else if (part.parts) {
+          const nestedBody = getBodyFromParts(part.parts);
+          if (nestedBody) return nestedBody;
+        }
+      }
+      return '';
+    };
+
+    if (msg.payload?.body?.data) {
+      body = Buffer.from(msg.payload.body.data, 'base64').toString('utf-8');
+    } else if (msg.payload?.parts) {
+      body = getBodyFromParts(msg.payload.parts);
+    }
+
+    res.json({
+      id: msg.id,
+      subject: headers['subject'] || 'No Subject',
+      sender: headers['from'] || 'Unknown',
+      date: new Date(parseInt(msg.internalDate)).toISOString(),
+      body,
+      headers
+    });
+  } catch (error) {
+    console.error('Error fetching email details:', error);
+
+    if (error.code === 401) {
+      return res.status(401).json({ error: 'Gmail access token expired. Please re-authenticate.' });
+    }
+
+    res.status(500).json({
+      error: 'Failed to fetch email details',
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined
+    });
   }
 });
 

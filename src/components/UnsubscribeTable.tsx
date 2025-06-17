@@ -6,11 +6,13 @@ import {
   Chip,
   CircularProgress,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputLabel,
   MenuItem,
   Paper,
   Select,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -22,9 +24,21 @@ import {
   Tooltip,
   Typography
 } from '@mui/material';
-import { CheckCircle, Launch, OpenInNew, Refresh, Search } from '@mui/icons-material';
+import {
+  CheckCircle,
+  Launch,
+  OpenInNew,
+  Refresh,
+  Search,
+  Visibility,
+  Archive,
+  ViewList,
+  Group
+} from '@mui/icons-material';
 import { format } from 'date-fns';
 import { gmailAPI, UnsubscribeEmail } from '@/utils/api';
+import EmailViewerModal from './EmailViewerModal';
+import SenderGroupView from './SenderGroupView';
 
 interface UnsubscribeTableProps {
   refreshTrigger?: number;
@@ -41,6 +55,10 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({ refreshTrigger = 0 
   const [searchSender, setSearchSender] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'sender'>('date');
   const [unsubscribedIds, setUnsubscribedIds] = useState<Set<string>>(new Set());
+  const [selectedEmail, setSelectedEmail] = useState<UnsubscribeEmail | null>(null);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [autoArchive, setAutoArchive] = useState(true);
+  const [viewMode, setViewMode] = useState<'table' | 'senders'>('table');
 
   const fetchEmails = useCallback(
     async (pageNum = 0, sender = '') => {
@@ -96,19 +114,86 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({ refreshTrigger = 0 
 
   const handleUnsubscribeClick = async (email: UnsubscribeEmail, unsubscribeUrl: string) => {
     try {
-      await gmailAPI.markUnsubscribed(email.id, unsubscribeUrl);
+      await gmailAPI.markUnsubscribed(email.id, unsubscribeUrl, autoArchive);
       setUnsubscribedIds(prev => new Set(prev).add(email.id));
 
       // Open unsubscribe link in new tab
       window.open(unsubscribeUrl, '_blank', 'noopener,noreferrer');
+
+      // If archived, remove from current view after a short delay
+      if (autoArchive) {
+        setTimeout(() => {
+          setEmails(prev => prev.filter(e => e.id !== email.id));
+        }, 1000);
+      }
     } catch (error) {
       console.error('Failed to mark as unsubscribed:', error);
+    }
+  };
+
+  const handleUnsubscribeAndArchive = async (email: UnsubscribeEmail, unsubscribeUrl: string) => {
+    try {
+      await gmailAPI.markUnsubscribed(email.id, unsubscribeUrl, true);
+      setUnsubscribedIds(prev => new Set(prev).add(email.id));
+
+      // Open unsubscribe link in new tab
+      window.open(unsubscribeUrl, '_blank', 'noopener,noreferrer');
+
+      // Remove from current view after a short delay
+      setTimeout(() => {
+        setEmails(prev => prev.filter(e => e.id !== email.id));
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to unsubscribe and archive:', error);
     }
   };
 
   const handleRefresh = () => {
     setPage(0);
     fetchEmails(0, searchSender);
+  };
+
+  const handleViewEmail = (email: UnsubscribeEmail) => {
+    setSelectedEmail(email);
+    setEmailModalOpen(true);
+  };
+
+  const handleCloseEmailModal = () => {
+    setEmailModalOpen(false);
+    setSelectedEmail(null);
+  };
+
+  const handleBulkUnsubscribe = async (senderGroup: any) => {
+    // Use the first available unsubscribe link for bulk operations
+    if (senderGroup.unsubscribeLinks.length === 0) return;
+
+    const unsubscribeUrl = senderGroup.unsubscribeLinks[0].url;
+
+    // Process all emails from this sender
+    for (const email of senderGroup.emails) {
+      if (!unsubscribedIds.has(email.id)) {
+        try {
+          await gmailAPI.markUnsubscribed(email.id, unsubscribeUrl, autoArchive);
+          setUnsubscribedIds(prev => new Set(prev).add(email.id));
+        } catch (error) {
+          console.error(`Failed to unsubscribe from email ${email.id}:`, error);
+        }
+      }
+    }
+
+    // Open unsubscribe link once for the sender
+    window.open(unsubscribeUrl, '_blank', 'noopener,noreferrer');
+
+    // If auto-archive is enabled, remove all emails from this sender after delay
+    if (autoArchive) {
+      setTimeout(() => {
+        setEmails(prev =>
+          prev.filter(
+            email => !senderGroup.emails.some((groupEmail: any) => groupEmail.id === email.id)
+          )
+        );
+      }, 1000);
+    }
   };
 
   if (loading && emails.length === 0) {
@@ -159,6 +244,38 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({ refreshTrigger = 0 
           >
             Refresh
           </Button>
+
+          {/* View Mode Toggle */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant={viewMode === 'table' ? 'contained' : 'outlined'}
+              size="small"
+              startIcon={<ViewList />}
+              onClick={() => setViewMode('table')}
+            >
+              Table View
+            </Button>
+            <Button
+              variant={viewMode === 'senders' ? 'contained' : 'outlined'}
+              size="small"
+              startIcon={<Group />}
+              onClick={() => setViewMode('senders')}
+            >
+              Sender View
+            </Button>
+          </Box>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={autoArchive}
+                onChange={e => setAutoArchive(e.target.checked)}
+                size="small"
+              />
+            }
+            label="Auto-archive after unsubscribe"
+            sx={{ ml: 'auto' }}
+          />
         </Box>
       </Box>
 
@@ -168,98 +285,130 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({ refreshTrigger = 0 
         </Alert>
       )}
 
-      {/* Table */}
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Sender</TableCell>
-              <TableCell>Subject</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Unsubscribe Links</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {emails.length === 0 && !loading ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                  <Typography variant="body1" color="text.secondary">
-                    No unsubscribe emails found.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              emails.map(email => (
-                <TableRow
-                  key={email.id}
-                  sx={{
-                    opacity: unsubscribedIds.has(email.id) ? 0.6 : 1,
-                    '&:hover': { backgroundColor: 'action.hover' }
-                  }}
-                >
-                  <TableCell>
-                    <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                      {email.sender}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title={email.subject}>
-                      <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
-                        {email.subject}
-                      </Typography>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {format(new Date(email.date), 'MMM dd, yyyy')}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                      {email.unsubscribeLinks.map((link, index) => (
-                        <Chip
-                          key={index}
-                          label={link.source}
-                          size="small"
-                          variant="outlined"
-                          color={link.source === 'header' ? 'primary' : 'secondary'}
-                        />
-                      ))}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      {email.unsubscribeLinks.map((link, index) => (
-                        <Tooltip key={index} title={`Open ${link.source} unsubscribe link`}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleUnsubscribeClick(email, link.url)}
-                            disabled={unsubscribedIds.has(email.id)}
-                            color="primary"
-                          >
-                            {unsubscribedIds.has(email.id) ? <CheckCircle /> : <Launch />}
-                          </IconButton>
-                        </Tooltip>
-                      ))}
-                    </Box>
-                  </TableCell>
+      {/* Content - Table or Sender View */}
+      {viewMode === 'table' ? (
+        <>
+          {/* Table */}
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Sender</TableCell>
+                  <TableCell>Subject</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Unsubscribe Links</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              </TableHead>
+              <TableBody>
+                {emails.length === 0 && !loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        No unsubscribe emails found.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  emails.map(email => (
+                    <TableRow
+                      key={email.id}
+                      sx={{
+                        opacity: unsubscribedIds.has(email.id) ? 0.6 : 1,
+                        '&:hover': { backgroundColor: 'action.hover' }
+                      }}
+                    >
+                      <TableCell>
+                        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                          {email.sender}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title={email.subject}>
+                          <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+                            {email.subject}
+                          </Typography>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {format(new Date(email.date), 'MMM dd, yyyy')}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                          {email.unsubscribeLinks.map((link, index) => (
+                            <Chip
+                              key={index}
+                              label={link.source}
+                              size="small"
+                              variant="outlined"
+                              color={link.source === 'header' ? 'primary' : 'secondary'}
+                            />
+                          ))}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="View email content">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleViewEmail(email)}
+                              color="secondary"
+                            >
+                              <Visibility />
+                            </IconButton>
+                          </Tooltip>
+                          {email.unsubscribeLinks.map((link, index) => (
+                            <Tooltip key={index} title={`Open ${link.source} unsubscribe link`}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleUnsubscribeClick(email, link.url)}
+                                disabled={unsubscribedIds.has(email.id)}
+                                color="primary"
+                              >
+                                {unsubscribedIds.has(email.id) ? <CheckCircle /> : <Launch />}
+                              </IconButton>
+                            </Tooltip>
+                          ))}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-      {/* Pagination */}
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        component="div"
-        count={totalCount}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handlePageChange}
-        onRowsPerPageChange={handleChangeRowsPerPage}
+          {/* Pagination */}
+          <TablePagination
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            component="div"
+            count={totalCount}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </>
+      ) : (
+        /* Sender Group View */
+        <SenderGroupView
+          emails={emails}
+          unsubscribedIds={unsubscribedIds}
+          onUnsubscribe={handleUnsubscribeClick}
+          onViewEmail={handleViewEmail}
+          onBulkUnsubscribe={handleBulkUnsubscribe}
+          loading={loading}
+        />
+      )}
+
+      {/* Email Viewer Modal */}
+      <EmailViewerModal
+        open={emailModalOpen}
+        onClose={handleCloseEmailModal}
+        email={selectedEmail}
+        onUnsubscribe={handleUnsubscribeClick}
       />
     </Paper>
   );
