@@ -107,6 +107,14 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
     [rowsPerPage, nextPageToken, sortBy]
   );
 
+  // Filtered emails based on showUnsubscribed toggle
+  const filteredEmails = React.useMemo(() => {
+    if (showUnsubscribed) {
+      return emails; // Show all emails including unsubscribed ones
+    }
+    return emails.filter(email => !unsubscribedIds.has(email.id)); // Hide unsubscribed emails
+  }, [emails, unsubscribedIds, showUnsubscribed]);
+
   useEffect(() => {
     fetchEmails(page, searchSender);
   }, [page, searchSender, sortBy, refreshTrigger]);
@@ -337,16 +345,18 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {emails.length === 0 && !loading ? (
+                {filteredEmails.length === 0 && !loading ? (
                   <TableRow>
                     <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                       <Typography variant="body1" color="text.secondary">
-                        No unsubscribe emails found.
+                        {showUnsubscribed
+                          ? 'No emails found.'
+                          : 'No active unsubscribe emails found.'}
                       </Typography>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  emails.map(email => (
+                  filteredEmails.map(email => (
                     <TableRow
                       key={email.id}
                       sx={{
@@ -430,7 +440,7 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
       ) : (
         /* Sender Group View */
         <SenderGroupView
-          emails={emails}
+          emails={filteredEmails}
           unsubscribedIds={unsubscribedIds}
           onUnsubscribe={handleUnsubscribeClick}
           onViewEmail={handleViewEmail}
