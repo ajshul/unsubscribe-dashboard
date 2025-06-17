@@ -6,14 +6,34 @@ A full-stack React + Node.js application that helps you **view and manage all un
 
 ## ⚡ Features
 
+### 🎯 **Core Features**
+
 - **🔐 Google OAuth Authentication** - Secure login with your Google account
-- **📧 Gmail API Integration** - Automatically fetch emails with unsubscribe links
-- **🎨 Modern UI** - Beautiful, responsive design with dark/light mode toggle
-- **📊 Analytics Dashboard** - Track your inbox statistics and cleanup progress
-- **🔍 Search & Filter** - Find specific senders and sort by date or sender
-- **⚡ Real-time Updates** - Live data refresh and pagination
-- **🛡️ Security First** - Rate limiting, input validation, and secure token handling
-- **📱 Mobile Responsive** - Works perfectly on all device sizes
+- **📧 Enhanced Gmail API Integration** - Comprehensive email discovery with advanced search patterns
+- **📊 Real-time Analytics Dashboard** - Live statistics with automatic updates
+- **🔍 Advanced Search & Filtering** - Find specific senders, sort by date/sender, show unsubscribed emails
+- **📱 Mobile Responsive Design** - Works perfectly on all device sizes
+
+### ⚡ **Power User Features**
+
+- **⌨️ Command Palette** - Quick actions with keyboard shortcuts (⌘K/Ctrl+K)
+- **🎛️ Keyboard Shortcuts** - Refresh (⌘R), Toggle Views (⌘⇧V), Toggle Theme (⌘⇧T)
+- **👁️ Modal Email Viewer** - Full email content with sanitized HTML rendering
+- **📋 Sender Group View** - Bulk operations grouped by sender for efficient management
+- **🗂️ Auto-Archive** - Automatically archive emails after unsubscribing
+
+### 🎨 **Modern UI/UX**
+
+- **🌓 Dark/Light Mode Toggle** - Seamless theme switching with system preference detection
+- **✨ Beautiful Animations** - Smooth transitions, hover effects, and modern Material Design
+- **🎨 Enhanced Styling** - Gradient backgrounds, status-based coloring, and professional design
+- **⚡ Instant Feedback** - Real-time updates, loading states, and visual confirmations
+
+### 🛡️ **Security & Performance**
+
+- **🔒 Security First** - Rate limiting, input validation, and secure token handling
+- **🚀 Optimized Performance** - Efficient API calls, pagination, and state management
+- **🔄 Error Handling** - Comprehensive error boundaries and user-friendly error messages
 
 ---
 
@@ -48,7 +68,7 @@ A full-stack React + Node.js application that helps you **view and manage all un
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/unsubscribe-dashboard.git
+git clone https://github.com/ajshul/unsubscribe-dashboard.git
 cd unsubscribe-dashboard
 pnpm install
 ```
@@ -92,24 +112,30 @@ Visit `http://localhost:5173` to see the app!
 unsubscribe-dashboard/
 ├── src/
 │   ├── components/          # React components
-│   │   ├── Dashboard.tsx    # Main dashboard
-│   │   ├── Login.tsx        # OAuth login
-│   │   ├── UnsubscribeTable.tsx  # Email table
-│   │   ├── StatsCards.tsx   # Statistics display
-│   │   └── Header.tsx       # App header
+│   │   ├── Dashboard.tsx    # Main dashboard with global shortcuts
+│   │   ├── Login.tsx        # OAuth login page
+│   │   ├── Header.tsx       # App header with command palette button
+│   │   ├── UnsubscribeTable.tsx  # Email table with dual views
+│   │   ├── SenderGroupView.tsx   # Bulk operations by sender
+│   │   ├── EmailViewerModal.tsx  # Full email content viewer
+│   │   ├── CommandPalette.tsx    # Keyboard shortcut command palette
+│   │   └── StatsCards.tsx   # Real-time statistics display
 │   ├── contexts/            # React contexts
-│   │   ├── AuthContext.tsx  # Authentication state
-│   │   └── ThemeContext.tsx # Theme management
+│   │   ├── AuthContext.tsx  # Authentication state management
+│   │   └── ThemeContext.tsx # Dark/light theme management
+│   ├── theme/
+│   │   └── theme.ts        # Material-UI theme configuration
 │   ├── utils/
-│   │   └── api.ts          # API client setup
+│   │   └── api.ts          # API client with Gmail integration
 │   └── App.tsx             # Main app with routing
 ├── server/
 │   ├── routes/
-│   │   ├── auth.js         # OAuth routes
-│   │   └── gmail.js        # Gmail API routes
-│   └── index.js            # Express server
-├── .env.example            # Environment template
-└── README.md
+│   │   ├── auth.js         # OAuth authentication routes
+│   │   └── gmail.js        # Gmail API routes with enhanced search
+│   └── index.js            # Express server with security middleware
+├── .env.example            # Environment variables template
+├── SETUP_GUIDE.md          # Detailed setup instructions
+└── README.md               # Project documentation
 ```
 
 ---
@@ -191,12 +217,30 @@ unsubscribe-dashboard/
 
 ## 📈 Roadmap
 
-- [ ] **Bulk Operations** - Select and unsubscribe from multiple emails
-- [ ] **Email Categories** - Automatically categorize newsletter types
-- [ ] **Unsubscribe History** - Track successful unsubscribes
-- [ ] **Smart Suggestions** - AI-powered recommendations
-- [ ] **Export Data** - Download your unsubscribe data
+### ✅ **Recently Completed**
+
+- [x] **Command Palette** - Quick actions with keyboard shortcuts
+- [x] **Bulk Operations** - Sender group view with bulk unsubscribe
+- [x] **Modal Email Viewer** - Full email content viewing
+- [x] **Auto-Archive** - Automatic email archiving after unsubscribe
+- [x] **Enhanced Search** - Comprehensive email discovery patterns
+- [x] **Real-time Updates** - Live statistics and count updates
+- [x] **Beautiful UI** - Modern design with animations and gradients
+
+### 🚧 **In Progress**
+
+- [ ] **Unsubscribe History Tracking** - Persistent database storage of actions
+- [ ] **PWA Support** - Installable progressive web app
+- [ ] **Scheduled Sweeps** - Automated cleanup jobs
+
+### 🔮 **Future Features**
+
+- [ ] **Email Categories** - AI-powered automatic categorization
+- [ ] **Smart Suggestions** - Machine learning recommendations
+- [ ] **Export Data** - CSV/JSON export of unsubscribe history
 - [ ] **Multiple Email Accounts** - Support for multiple Gmail accounts
+- [ ] **Heat-Map Calendar** - Visual inbox volume analytics
+- [ ] **Undo/Restore** - 7-day recovery for accidental unsubscribes
 
 ---
 
