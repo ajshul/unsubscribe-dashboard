@@ -219,13 +219,15 @@ unsubscribe-dashboard/
 
 ### ✅ **Recently Completed**
 
-- [x] **Command Palette** - Quick actions with keyboard shortcuts
-- [x] **Bulk Operations** - Sender group view with bulk unsubscribe
-- [x] **Modal Email Viewer** - Full email content viewing
-- [x] **Auto-Archive** - Automatic email archiving after unsubscribe
-- [x] **Enhanced Search** - Comprehensive email discovery patterns
-- [x] **Real-time Updates** - Live statistics and count updates
-- [x] **Beautiful UI** - Modern design with animations and gradients
+- [x] **Command Palette** - Quick actions with keyboard shortcuts (⌘K visible button + hotkeys)
+- [x] **Bulk Operations** - Sender group view with bulk unsubscribe and batch processing
+- [x] **Modal Email Viewer** - Full email content viewing with sanitized HTML rendering
+- [x] **Auto-Archive** - Fully functional automatic email archiving after unsubscribe
+- [x] **Enhanced Gmail Search** - Comprehensive patterns finding significantly more unsubscribe emails
+- [x] **Show Unsubscribed Toggle** - View archived/processed emails with proper filtering
+- [x] **Real-time Statistics** - Live count updates that accurately reflect processed emails
+- [x] **OAuth Scope Enhancement** - Added `gmail.modify` permissions for archiving functionality
+- [x] **Beautiful Modern UI** - Gradient backgrounds, smooth animations, and professional styling
 
 ### 🚧 **In Progress**
 
