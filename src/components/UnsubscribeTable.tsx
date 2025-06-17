@@ -42,9 +42,15 @@ import SenderGroupView from './SenderGroupView';
 
 interface UnsubscribeTableProps {
   refreshTrigger?: number;
+  viewMode?: 'table' | 'senders';
+  onToggleView?: () => void;
 }
 
-const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({ refreshTrigger = 0 }) => {
+const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
+  refreshTrigger = 0,
+  viewMode = 'table',
+  onToggleView
+}) => {
   const [emails, setEmails] = useState<UnsubscribeEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +64,7 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({ refreshTrigger = 0 
   const [selectedEmail, setSelectedEmail] = useState<UnsubscribeEmail | null>(null);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [autoArchive, setAutoArchive] = useState(true);
-  const [viewMode, setViewMode] = useState<'table' | 'senders'>('table');
+  const [showArchived, setShowArchived] = useState(false);
 
   const fetchEmails = useCallback(
     async (pageNum = 0, sender = '') => {
@@ -245,25 +251,44 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({ refreshTrigger = 0 
             Refresh
           </Button>
 
+          {/* Archive Toggle */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showArchived}
+                onChange={e => setShowArchived(e.target.checked)}
+                size="small"
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Archive fontSize="small" />
+                Show Archived
+              </Box>
+            }
+          />
+
           {/* View Mode Toggle */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant={viewMode === 'table' ? 'contained' : 'outlined'}
-              size="small"
-              startIcon={<ViewList />}
-              onClick={() => setViewMode('table')}
-            >
-              Table View
-            </Button>
-            <Button
-              variant={viewMode === 'senders' ? 'contained' : 'outlined'}
-              size="small"
-              startIcon={<Group />}
-              onClick={() => setViewMode('senders')}
-            >
-              Sender View
-            </Button>
-          </Box>
+          {onToggleView && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant={viewMode === 'table' ? 'contained' : 'outlined'}
+                size="small"
+                startIcon={<ViewList />}
+                onClick={() => viewMode !== 'table' && onToggleView()}
+              >
+                Table View
+              </Button>
+              <Button
+                variant={viewMode === 'senders' ? 'contained' : 'outlined'}
+                size="small"
+                startIcon={<Group />}
+                onClick={() => viewMode !== 'senders' && onToggleView()}
+              >
+                Sender View
+              </Button>
+            </Box>
+          )}
 
           <FormControlLabel
             control={
