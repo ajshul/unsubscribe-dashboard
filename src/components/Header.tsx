@@ -13,15 +13,23 @@ import {
   Typography,
   useTheme
 } from '@mui/material';
-import { Brightness4, Brightness7, Refresh, Settings, LogoutOutlined } from '@mui/icons-material';
+import {
+  Brightness4,
+  Brightness7,
+  Refresh,
+  Settings,
+  LogoutOutlined,
+  Search
+} from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeMode } from '@/contexts/ThemeContext';
 
 interface HeaderProps {
   onRefresh: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onRefresh }) => {
+const Header: React.FC<HeaderProps> = ({ onRefresh, onOpenCommandPalette }) => {
   const theme = useTheme();
   const { user, logout } = useAuth();
   const { mode, toggleMode } = useThemeMode();
@@ -54,6 +62,40 @@ const Header: React.FC<HeaderProps> = ({ onRefresh }) => {
             <Switch checked={mode === 'dark'} onChange={toggleMode} size="small" />
             <Brightness4 sx={{ fontSize: 20 }} />
           </Box>
+
+          {/* Command Palette Button */}
+          {onOpenCommandPalette && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Search />}
+              onClick={onOpenCommandPalette}
+              sx={{
+                borderColor: 'rgba(255, 255, 255, 0.23)',
+                color: 'inherit',
+                '&:hover': {
+                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)'
+                }
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Search
+              </Box>
+              <Chip
+                label="⌘K"
+                size="small"
+                sx={{
+                  ml: 1,
+                  height: 20,
+                  fontSize: '0.7rem',
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  color: 'inherit',
+                  display: { xs: 'none', sm: 'inline-flex' }
+                }}
+              />
+            </Button>
+          )}
 
           {/* Refresh Button */}
           <Button
