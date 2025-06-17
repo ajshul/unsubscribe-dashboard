@@ -103,8 +103,9 @@ router.get('/unsubscribe-emails', authenticateToken, rateLimiter, async (req, re
     const { page = 1, limit = 50, sender } = req.query;
     const gmail = getGmailClient(req.user.userId);
 
-    // Search for emails with unsubscribe links
-    let query = 'in:inbox has:unsubscribe OR "unsubscribe" OR "opt out" OR "remove me"';
+    // Search for emails with unsubscribe links - more comprehensive query
+    let query =
+      'in:inbox (has:unsubscribe OR "unsubscribe" OR "opt out" OR "opt-out" OR "remove me" OR "manage subscription" OR "email preferences" OR "notification settings" OR "list-unsubscribe")';
     if (sender) {
       query += ` from:${sender}`;
     }
@@ -217,10 +218,10 @@ router.get('/stats', authenticateToken, rateLimiter, async (req, res) => {
       id: 'INBOX'
     });
 
-    // Get unsubscribe emails count (approximate)
+    // Get unsubscribe emails count (approximate) - using same comprehensive query
     const unsubscribeResponse = await gmail.users.messages.list({
       userId: 'me',
-      q: 'in:inbox has:unsubscribe OR "unsubscribe" OR "opt out"',
+      q: 'in:inbox (has:unsubscribe OR "unsubscribe" OR "opt out" OR "opt-out" OR "remove me" OR "manage subscription" OR "email preferences" OR "notification settings" OR "list-unsubscribe")',
       maxResults: 1
     });
 

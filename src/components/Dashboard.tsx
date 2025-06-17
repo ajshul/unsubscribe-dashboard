@@ -11,11 +11,17 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { mode, toggleMode } = useThemeMode();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'senders'>('table');
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
+    setStatsRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleStatsRefresh = () => {
+    setStatsRefreshTrigger(prev => prev + 1);
   };
 
   const handleToggleView = () => {
@@ -72,7 +78,7 @@ const Dashboard: React.FC = () => {
 
         {/* Stats Section */}
         <Box sx={{ mb: 4 }}>
-          <StatsCards refreshTrigger={refreshTrigger} />
+          <StatsCards refreshTrigger={statsRefreshTrigger} />
         </Box>
 
         {/* Main Table Section */}
@@ -82,6 +88,7 @@ const Dashboard: React.FC = () => {
               refreshTrigger={refreshTrigger}
               viewMode={viewMode}
               onToggleView={handleToggleView}
+              onStatsChange={handleStatsRefresh}
             />
           </CardContent>
         </Card>

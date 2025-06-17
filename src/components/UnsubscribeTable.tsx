@@ -44,12 +44,14 @@ interface UnsubscribeTableProps {
   refreshTrigger?: number;
   viewMode?: 'table' | 'senders';
   onToggleView?: () => void;
+  onStatsChange?: () => void;
 }
 
 const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
   refreshTrigger = 0,
   viewMode = 'table',
-  onToggleView
+  onToggleView,
+  onStatsChange
 }) => {
   const [emails, setEmails] = useState<UnsubscribeEmail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +66,7 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
   const [selectedEmail, setSelectedEmail] = useState<UnsubscribeEmail | null>(null);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [autoArchive, setAutoArchive] = useState(true);
-  const [showArchived, setShowArchived] = useState(false);
+  const [showUnsubscribed, setShowUnsubscribed] = useState(false);
 
   const fetchEmails = useCallback(
     async (pageNum = 0, sender = '') => {
@@ -123,13 +125,17 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
       await gmailAPI.markUnsubscribed(email.id, unsubscribeUrl, autoArchive);
       setUnsubscribedIds(prev => new Set(prev).add(email.id));
 
+      // Trigger stats refresh
+      onStatsChange?.();
+
       // Open unsubscribe link in new tab
       window.open(unsubscribeUrl, '_blank', 'noopener,noreferrer');
 
       // If archived, remove from current view after a short delay
-      if (autoArchive) {
+      if (autoArchive && !showUnsubscribed) {
         setTimeout(() => {
           setEmails(prev => prev.filter(e => e.id !== email.id));
+          setTotalCount(prev => Math.max(0, prev - 1));
         }, 1000);
       }
     } catch (error) {
@@ -187,17 +193,22 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
       }
     }
 
+    // Trigger stats refresh
+    onStatsChange?.();
+
     // Open unsubscribe link once for the sender
     window.open(unsubscribeUrl, '_blank', 'noopener,noreferrer');
 
     // If auto-archive is enabled, remove all emails from this sender after delay
-    if (autoArchive) {
+    if (autoArchive && !showUnsubscribed) {
       setTimeout(() => {
+        const emailsToRemove = senderGroup.emails.length;
         setEmails(prev =>
           prev.filter(
             email => !senderGroup.emails.some((groupEmail: any) => groupEmail.id === email.id)
           )
         );
+        setTotalCount(prev => Math.max(0, prev - emailsToRemove));
       }, 1000);
     }
   };
@@ -251,19 +262,19 @@ const UnsubscribeTable: React.FC<UnsubscribeTableProps> = ({
             Refresh
           </Button>
 
-          {/* Archive Toggle */}
+          {/* Unsubscribed Toggle */}
           <FormControlLabel
             control={
               <Switch
-                checked={showArchived}
-                onChange={e => setShowArchived(e.target.checked)}
+                checked={showUnsubscribed}
+                onChange={e => setShowUnsubscribed(e.target.checked)}
                 size="small"
               />
             }
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Archive fontSize="small" />
-                Show Archived
+                <CheckCircle fontSize="small" />
+                Show Unsubscribed
               </Box>
             }
           />
